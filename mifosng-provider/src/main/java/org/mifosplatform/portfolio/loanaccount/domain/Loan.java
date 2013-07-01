@@ -51,6 +51,7 @@ import org.mifosplatform.organisation.monetary.domain.ApplicationCurrency;
 import org.mifosplatform.organisation.monetary.domain.MonetaryCurrency;
 import org.mifosplatform.organisation.monetary.domain.Money;
 import org.mifosplatform.organisation.staff.domain.Staff;
+import org.mifosplatform.portfolio.calendar.service.CalendarHelper;
 import org.mifosplatform.portfolio.charge.exception.LoanChargeCannotBeAddedException;
 import org.mifosplatform.portfolio.client.domain.Client;
 import org.mifosplatform.portfolio.collateral.data.CollateralData;
@@ -135,6 +136,9 @@ public class Loan extends AbstractPersistable<Long> {
     @Column(name = "loan_status_id", nullable = false)
     private Integer loanStatus;
 
+	@Column(name = "sync_disbursement_with_meeting", nullable = true)
+	private Boolean syncDisbursementWithMeeting;
+    
     // loan application states
     @Temporal(TemporalType.DATE)
     @Column(name = "submittedon_date")
@@ -187,7 +191,6 @@ public class Loan extends AbstractPersistable<Long> {
     @JoinColumn(name = "disbursedon_userid", nullable = true)
     private AppUser disbursedBy;
 
-    @SuppressWarnings("unused")
     @Temporal(TemporalType.DATE)
     @Column(name = "closedon_date")
     private Date closedOnDate;
@@ -276,31 +279,34 @@ public class Loan extends AbstractPersistable<Long> {
             final Set<LoanCollateral> collateral) {
         final LoanStatus status = null;
         final Group group = null;
+        final Boolean syncDisbursementWithMeeting = null;
         return new Loan(accountNo, client, group, loanType, fund, officer, loanPurpose, transactionProcessingStrategy, loanProduct,
-                loanRepaymentScheduleDetail, status, loanCharges, collateral);
+                loanRepaymentScheduleDetail, status, loanCharges, collateral, syncDisbursementWithMeeting);
     }
 
     public static Loan newGroupLoanApplication(final String accountNo, final Group group, final Integer loanType,
             final LoanProduct loanProduct, final Fund fund, final Staff officer,
             final LoanTransactionProcessingStrategy transactionProcessingStrategy,
-            final LoanProductRelatedDetail loanRepaymentScheduleDetail, final Set<LoanCharge> loanCharges) {
+            final LoanProductRelatedDetail loanRepaymentScheduleDetail, final Set<LoanCharge> loanCharges, 
+            final Boolean syncDisbursementWithMeeting) {
         final LoanStatus status = null;
         final CodeValue loanPurpose = null;
         final Set<LoanCollateral> collateral = null;
         final Client client = null;
         return new Loan(accountNo, client, group, loanType, fund, officer, loanPurpose, transactionProcessingStrategy, loanProduct,
-                loanRepaymentScheduleDetail, status, loanCharges, collateral);
+                loanRepaymentScheduleDetail, status, loanCharges, collateral, syncDisbursementWithMeeting);
     }
 
     public static Loan newIndividualLoanApplicationFromGroup(final String accountNo, final Client client, final Group group,
             final Integer loanType, final LoanProduct loanProduct, final Fund fund, final Staff officer,
             final LoanTransactionProcessingStrategy transactionProcessingStrategy,
-            final LoanProductRelatedDetail loanRepaymentScheduleDetail, final Set<LoanCharge> loanCharges) {
+            final LoanProductRelatedDetail loanRepaymentScheduleDetail, final Set<LoanCharge> loanCharges, 
+            final Boolean syncDisbursementWithMeeting) {
         final LoanStatus status = null;
         final CodeValue loanPurpose = null;
         final Set<LoanCollateral> collateral = null;
         return new Loan(accountNo, client, group, loanType, fund, officer, loanPurpose, transactionProcessingStrategy, loanProduct,
-                loanRepaymentScheduleDetail, status, loanCharges, collateral);
+                loanRepaymentScheduleDetail, status, loanCharges, collateral, syncDisbursementWithMeeting);
     }
 
     protected Loan() {
@@ -310,7 +316,7 @@ public class Loan extends AbstractPersistable<Long> {
     private Loan(final String accountNo, final Client client, final Group group, final Integer loanType, final Fund fund,
             final Staff loanOfficer, final CodeValue loanPurpose, final LoanTransactionProcessingStrategy transactionProcessingStrategy,
             final LoanProduct loanProduct, final LoanProductRelatedDetail loanRepaymentScheduleDetail, final LoanStatus loanStatus,
-            final Set<LoanCharge> loanCharges, final Set<LoanCollateral> collateral) {
+            final Set<LoanCharge> loanCharges, final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting) {
 
         this.loanRepaymentScheduleDetail = loanRepaymentScheduleDetail;
         this.loanRepaymentScheduleDetail.validateRepaymentPeriodWithGraceSettings();
@@ -348,6 +354,8 @@ public class Loan extends AbstractPersistable<Long> {
             this.collateral = null;
         }
         this.loanOfficerHistory = null;
+        
+        this.syncDisbursementWithMeeting = syncDisbursementWithMeeting;
     }
 
     private LoanSummary updateSummaryWithTotalFeeChargesDueAtDisbursement(final BigDecimal feeChargesDueAtDisbursement) {
@@ -815,8 +823,7 @@ public class Loan extends AbstractPersistable<Long> {
         }
 
         // add clientId, groupId and loanType changes to actual changes
-        // FIXME: AA - We may require separate api command to move loan from one
-        // client to another
+        
         final String clientIdParamName = "clientId";
         final Long clientId = this.client == null ? null : this.client.getId();
         if (command.isChangeInLongParameterNamed(clientIdParamName, clientId)) {
@@ -916,6 +923,13 @@ public class Loan extends AbstractPersistable<Long> {
             }
         }
 
+        final String syncDisbursementParameterName = "syncDisbursementWithMeeting";
+        if (command.isChangeInBooleanParameterNamed(syncDisbursementParameterName, isSyncDisbursementWithMeeting())) {
+        	final Boolean valueAsInput = command.booleanObjectValueOfParameterNamed(syncDisbursementParameterName);
+        	actualChanges.put(syncDisbursementParameterName, valueAsInput);
+        	this.syncDisbursementWithMeeting = valueAsInput;
+        }
+        
         final String interestChargedFromDateParamName = "interestChargedFromDate";
         if (command.isChangeInLocalDateParameterNamed(interestChargedFromDateParamName, getInterestChargedFromDate())) {
             final String valueAsInput = command.stringValueOfParameterNamed(interestChargedFromDateParamName);
@@ -1278,7 +1292,8 @@ public class Loan extends AbstractPersistable<Long> {
 
     public Map<String, Object> disburse(final LoanScheduleGeneratorFactory loanScheduleFactory, final AppUser currentUser,
             final JsonCommand command, final ApplicationCurrency currency, final List<Long> existingTransactionIds,
-            final List<Long> existingReversedTransactionIds, final Map<String, Object> actualChanges, final PaymentDetail paymentDetail) {
+            final List<Long> existingReversedTransactionIds, final Map<String, Object> actualChanges, 
+            final PaymentDetail paymentDetail, final LocalDate firstRepaymentMeetingDate) {
 
         updateLoanToPreDisbursalState();
 
@@ -1304,7 +1319,7 @@ public class Loan extends AbstractPersistable<Long> {
             handleDisbursementTransaction(paymentDetail, actualDisbursementDate);
 
             if (isRepaymentScheduleRegenerationRequiredForDisbursement(actualDisbursementDate)) {
-                regenerateRepaymentSchedule(loanScheduleFactory, currency);
+                regenerateRepaymentSchedule(loanScheduleFactory, currency, firstRepaymentMeetingDate);
                 updateLoanRepaymentPeriodsDerivedFields(actualDisbursementDate);
             } else {
                 updateLoanRepaymentPeriodsDerivedFields(actualDisbursementDate);
@@ -1331,7 +1346,7 @@ public class Loan extends AbstractPersistable<Long> {
      * details/state.
      */
     private void regenerateRepaymentSchedule(final LoanScheduleGeneratorFactory loanScheduleFactory,
-            final ApplicationCurrency applicationCurrency) {
+            final ApplicationCurrency applicationCurrency, final LocalDate firstRepaymentMeetingDate) {
 
         final InterestMethod interestMethod = this.loanRepaymentScheduleDetail.getInterestMethod();
         final LoanScheduleGenerator loanScheduleGenerator = loanScheduleFactory.create(interestMethod);
@@ -1341,9 +1356,11 @@ public class Loan extends AbstractPersistable<Long> {
 
         final Integer loanTermFrequency = this.termFrequency;
         final PeriodFrequencyType loanTermPeriodFrequencyType = PeriodFrequencyType.fromInt(this.termPeriodFrequencyType);
-
+        //If ExpectedFirstRepaymentOnDate is null and repayment is synced with meeting then use firstRepaymentMeetingDate
+        //to generate repayment schedule dates
+        final LocalDate firstRepaymentOnDate = (getExpectedFirstRepaymentOnDate() == null) ? firstRepaymentMeetingDate : getExpectedFirstRepaymentOnDate(); 
         LoanApplicationTerms loanApplicationTerms = LoanApplicationTerms.assembleFrom(applicationCurrency, loanTermFrequency,
-                loanTermPeriodFrequencyType, getExpectedDisbursedOnLocalDate(), getExpectedFirstRepaymentOnDate(), getInArrearsTolerance(),
+                loanTermPeriodFrequencyType, getExpectedDisbursedOnLocalDate(), firstRepaymentOnDate, getInArrearsTolerance(),
                 this.loanRepaymentScheduleDetail);
 
         LoanScheduleModel loanSchedule = loanScheduleGenerator.generate(mc, applicationCurrency, loanApplicationTerms, this.charges);
@@ -2001,7 +2018,7 @@ public class Loan extends AbstractPersistable<Long> {
         return disbursementDate;
     }
 
-    private LocalDate getExpectedFirstRepaymentOnDate() {
+    public LocalDate getExpectedFirstRepaymentOnDate() {
         LocalDate firstRepaymentDate = null;
         if (this.expectedFirstRepaymentOnDate != null) {
             firstRepaymentDate = new LocalDate(this.expectedFirstRepaymentOnDate);
@@ -2299,4 +2316,37 @@ public class Loan extends AbstractPersistable<Long> {
         this.loanSummaryWrapper = loanSummaryWrapper;
         this.transactionProcessorFactory = transactionProcessorFactory;
     }
+
+    public boolean isSyncDisbursementWithMeeting() {
+        return this.syncDisbursementWithMeeting == null ? false : this.syncDisbursementWithMeeting;
+    }
+
+    public Date getClosedOnDate() {
+        return this.closedOnDate;
+    }
+
+    public void updateLoanRepaymentScheduleDates(final LocalDate meetingStartDate, final String recuringRule) {
+        //update repayment dates of repayment schedule installaments
+        LocalDate tmpFromDate = this.getDisbursementDate();//first repayment's from date is same as disbursement date.
+        LocalDate newRepaymentDate = null;
+        for (LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallment : this.repaymentScheduleInstallments) {
+            final LocalDate oldDueDate = loanRepaymentScheduleInstallment.getDueDate();
+            //FIXME: AA this won't update repayment dates before current date.
+            if (oldDueDate.isAfter(meetingStartDate) && oldDueDate.isAfter(DateUtils.getLocalDateOfTenant())) {
+                final PeriodFrequencyType repaymentPeriodFrequencyType = this.loanRepaymentScheduleDetail.getRepaymentPeriodFrequencyType();
+                final String frequency = CalendarHelper.getMeetingFrequencyFromPeriodFrequencyType(repaymentPeriodFrequencyType);
+                final Integer loanRepaymentInterval = this.loanRepaymentScheduleDetail.getRepayEvery();
+                // reset repayment date with new meeting date
+                newRepaymentDate = CalendarHelper.getNewRepaymentMeetingDate(recuringRule, meetingStartDate, oldDueDate, loanRepaymentInterval, frequency);
+                loanRepaymentScheduleInstallment.updateDueDate(newRepaymentDate);
+                //reset from date to get actual daysInPeriod
+                loanRepaymentScheduleInstallment.updateFromDate(tmpFromDate);
+                tmpFromDate = newRepaymentDate;//update with new repayment date
+            }else{
+                tmpFromDate = oldDueDate;
+            }
+            
+        }
+    }
+
 }
