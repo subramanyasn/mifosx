@@ -1,4 +1,4 @@
-package org.mifosplatform.scheduledjobs.domain;
+package org.mifosplatform.infrastructure.jobs.domain;
 
 import java.util.Date;
 
@@ -11,18 +11,20 @@ import javax.persistence.TemporalType;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
-@Table(name = "scheduled_jobs")
-public class ScheduledJobDetails extends AbstractPersistable<Long> {
+@Table(name = "job")
+public class ScheduledJobDetail extends AbstractPersistable<Long> {
 
-    @Column(name = "job_name")
+    @Column(name = "name")
     private String jobName;
 
-    @Column(name = "job_display_name")
+    @SuppressWarnings("unused")
+    @Column(name = "display_name")
     private String jobDisplayName;
 
     @Column(name = "cron_expression")
     private String croneExpression;
 
+    @SuppressWarnings("unused")
     @Column(name = "create_time")
     @Temporal(TemporalType.TIMESTAMP)
     private Date createTime;
@@ -33,10 +35,12 @@ public class ScheduledJobDetails extends AbstractPersistable<Long> {
     @Column(name = "group_name")
     private String groupName;
 
+    @SuppressWarnings("unused")
     @Column(name = "previous_run_start_time")
     @Temporal(TemporalType.TIMESTAMP)
     private Date previousRunStartTime;
 
+    @SuppressWarnings("unused")
     @Column(name = "next_run_time")
     @Temporal(TemporalType.TIMESTAMP)
     private Date nextRunTime;
@@ -44,17 +48,18 @@ public class ScheduledJobDetails extends AbstractPersistable<Long> {
     @Column(name = "trigger_key")
     private String triggerKey;
 
-    @Column(name = "job_initializing_errorlog")
+    @SuppressWarnings("unused")
+    @Column(name = "initializing_errorlog")
     private String errorLog;
 
     @Column(name = "is_active")
     private boolean activeSchedular;
 
-    public ScheduledJobDetails() {
+    public ScheduledJobDetail() {
 
     }
 
-    public ScheduledJobDetails(final String jobName, final String jobDisplayName, final String croneExpression, Date createTime,
+    public ScheduledJobDetail(final String jobName, final String jobDisplayName, final String croneExpression, final Date createTime,
             final Short taskPriority, final String groupName, final Date previousRunStartTime, final Date nextRunTime,
             final String triggKey, final String errorLog, final boolean activeSchedular) {
         this.jobName = jobName;
@@ -94,23 +99,23 @@ public class ScheduledJobDetails extends AbstractPersistable<Long> {
         return this.activeSchedular;
     }
 
-    public void updateCroneExpression(String croneExpression) {
+    public void updateCroneExpression(final String croneExpression) {
         this.croneExpression = croneExpression;
     }
 
-    public void updatePreviousRunStartTime(Date previousRunStartTime) {
+    public void updatePreviousRunStartTime(final Date previousRunStartTime) {
         this.previousRunStartTime = previousRunStartTime;
     }
 
-    public void updateNextRunTime(Date nextRunTime) {
+    public void updateNextRunTime(final Date nextRunTime) {
         this.nextRunTime = nextRunTime;
     }
 
-    public void updateTriggerKey(String triggerKey) {
+    public void updateTriggerKey(final String triggerKey) {
         this.triggerKey = triggerKey;
     }
 
-    public void updateErrorLog(String errorLog) {
+    public void updateErrorLog(final String errorLog) {
         this.errorLog = errorLog;
     }
 
