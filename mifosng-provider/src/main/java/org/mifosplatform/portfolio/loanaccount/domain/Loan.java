@@ -1815,7 +1815,8 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public LoanTransaction closeAsWrittenOff(final JsonCommand command, final LoanLifecycleStateMachine loanLifecycleStateMachine,
-            final Map<String, Object> changes, final List<Long> existingTransactionIds, final List<Long> existingReversedTransactionIds) {
+            final Map<String, Object> changes, final List<Long> existingTransactionIds, final List<Long> existingReversedTransactionIds,
+            final AppUser currentUser) {
 
         final LoanStatus statusEnum = loanLifecycleStateMachine.transition(LoanEvent.WRITE_OFF_OUTSTANDING,
                 LoanStatus.fromInt(this.loanStatus));
@@ -1832,6 +1833,7 @@ public class Loan extends AbstractPersistable<Long> {
 
             this.closedOnDate = writtenOffOnLocalDate.toDate();
             this.writtenOffOnDate = writtenOffOnLocalDate.toDate();
+            this.closedBy = currentUser;
             changes.put("closedOnDate", command.stringValueOfParameterNamed("transactionDate"));
             changes.put("writtenOffOnDate", command.stringValueOfParameterNamed("transactionDate"));
 
@@ -2507,6 +2509,14 @@ public class Loan extends AbstractPersistable<Long> {
 
     public Integer getTermPeriodFrequencyType() {
         return this.termPeriodFrequencyType;
+    }
+
+    public void validateExpectedDisbursementForHolidayAndNonWorkingDay(WorkingDays workingDays, boolean isHolidayEnabled,
+            List<Holiday> holidays) {
+        // validate if disbursement date is a holiday or a non-working day
+        validateDisbursementDateIsOnNonWorkingDay(workingDays);
+        validateDisbursementDateIsOnHoliday(isHolidayEnabled, holidays);
+
     }
 
 }

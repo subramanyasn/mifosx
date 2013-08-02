@@ -140,6 +140,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     @Override
     public CommandProcessingResult submitApplication(final JsonCommand command) {
 
+        try {
         final AppUser currentUser = context.authenticatedUser();
 
         this.fromApiJsonDeserializer.validateForCreate(command.json());
@@ -201,8 +202,12 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 .withGroupId(newLoanApplication.getGroupId()) //
                 .withLoanId(newLoanApplication.getId()) //
                 .build();
+        } catch (DataIntegrityViolationException dve) {
+            handleDataIntegrityIssues(command, dve);
+            return CommandProcessingResult.empty();
+        }
     }
-
+    
     @Transactional
     @Override
     public CommandProcessingResult modifyApplication(final Long loanId, final JsonCommand command) {
@@ -223,6 +228,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
 
             final Map<String, Object> changes = existingLoanApplication.loanApplicationModification(command, possiblyModifedLoanCharges,
                     possiblyModifedLoanCollateralItems, this.aprCalculator);
+
+            if (changes.containsKey("expectedDisbursementDate")) {
+                this.loanAssembler.validateExpectedDisbursementForHolidayAndNonWorkingDay(existingLoanApplication);
+            }
 
             final String clientIdParamName = "clientId";
             if (changes.containsKey(clientIdParamName)) {
@@ -245,8 +254,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             }
             
             validateSubmittedOnDate(existingLoanApplication);
-            // validate min and maximum constraints
-            this.fromApiJsonDeserializer.validateForModify(command.json());
             final LoanProductRelatedDetail productRelatedDetail = existingLoanApplication.repaymentScheduleDetail();
             this.fromApiJsonDeserializer.validateLoanTermAndRepaidEveryValues(existingLoanApplication.getTermFrequency(), existingLoanApplication.getTermPeriodFrequencyType(),
                     productRelatedDetail.getNumberOfRepayments(), productRelatedDetail.getRepayEvery(),
@@ -377,8 +384,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
 
         logAsErrorUnexpectedDataIntegrityException(dve);
         throw new PlatformDataIntegrityException("error.msg.unknown.data.integrity.issue", "Unknown data integrity issue with resource.");
-    }
-
+    }    
+    
     private void logAsErrorUnexpectedDataIntegrityException(final DataIntegrityViolationException dve) {
         logger.error(dve.getMessage(), dve);
     }
