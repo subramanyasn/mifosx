@@ -55,6 +55,7 @@ import org.mifosplatform.organisation.monetary.domain.Money;
 import org.mifosplatform.organisation.staff.domain.Staff;
 import org.mifosplatform.organisation.workingdays.domain.WorkingDays;
 import org.mifosplatform.organisation.workingdays.service.WorkingDaysUtil;
+import org.mifosplatform.portfolio.accountdetails.domain.AccountType;
 import org.mifosplatform.portfolio.calendar.service.CalendarHelper;
 import org.mifosplatform.portfolio.charge.exception.LoanChargeCannotBeAddedException;
 import org.mifosplatform.portfolio.client.domain.Client;
@@ -1331,7 +1332,7 @@ public class Loan extends AbstractPersistable<Long> {
             actualChanges.put("status", LoanEnumerations.status(this.loanStatus));
 
             final LocalDate actualDisbursementDate = command.localDateValueOfParameterNamed("actualDisbursementDate");
-            final String txnExternalId = command.stringValueOfParameterNamed("externalId");
+            final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
             
             this.actualDisbursementDate = actualDisbursementDate.toDate();
             this.disbursedBy = currentUser;
@@ -1740,7 +1741,11 @@ public class Loan extends AbstractPersistable<Long> {
 
     public ChangedTransactionDetail adjustExistingTransaction(final LoanTransaction newTransactionDetail,
             final LoanLifecycleStateMachine loanLifecycleStateMachine, final LoanTransaction transactionForAdjustment,
-            final List<Long> existingTransactionIds, final List<Long> existingReversedTransactionIds) {
+            final List<Long> existingTransactionIds, final List<Long> existingReversedTransactionIds, final boolean isHolidayEnabled,
+            final List<Holiday> holidays, final WorkingDays workingDays) {
+
+        validateRepaymentDateIsOnHoliday(newTransactionDetail.getTransactionDate(), isHolidayEnabled, holidays);
+        validateRepaymentDateIsOnNonWorkingDay(newTransactionDetail.getTransactionDate(), workingDays);
 
         ChangedTransactionDetail changedTransactionDetail = null;
 
@@ -1831,7 +1836,7 @@ public class Loan extends AbstractPersistable<Long> {
             existingReversedTransactionIds.addAll(findExistingReversedTransactionIds());
 
             final LocalDate writtenOffOnLocalDate = command.localDateValueOfParameterNamed("transactionDate");
-            final String txnExternalId = command.stringValueOfParameterNamed("externalId");
+            final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
 
             this.closedOnDate = writtenOffOnLocalDate.toDate();
             this.writtenOffOnDate = writtenOffOnLocalDate.toDate();
@@ -1878,7 +1883,7 @@ public class Loan extends AbstractPersistable<Long> {
         existingReversedTransactionIds.addAll(findExistingReversedTransactionIds());
 
         final LocalDate closureDate = command.localDateValueOfParameterNamed("transactionDate");
-        final String txnExternalId = command.stringValueOfParameterNamed("externalId");
+        final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
         
         this.closedOnDate = closureDate.toDate();
         changes.put("closedOnDate", command.stringValueOfParameterNamed("transactionDate"));
@@ -2499,7 +2504,7 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public boolean isGroupLoan() {
-        return LoanType.fromInt(this.loanType).isGroupLoan();
+        return AccountType.fromInt(this.loanType).isGroupAccount();
     }
 
     public void updateInterestRateFrequencyType() {
