@@ -19,8 +19,8 @@ public enum SavingsAccountTransactionType {
     INTEREST_POSTING(3, "savingsAccountTransactionType.interestPosting"), //
     WITHDRAWAL_FEE(4, "savingsAccountTransactionType.withdrawalFee"), //
     ANNUAL_FEE(5, "savingsAccountTransactionType.annualFee"), //
-    WAIVE_CHARGES(6, "savingsAccountTransactionType.waiveCharges"),
-    APPLY_CHARGES(7, "savingsAccountTransactionType.applyCharges"),
+    WAIVE_CHARGES(6, "savingsAccountTransactionType.waiveCharges"), //
+    PAY_CHARGE(7, "savingsAccountTransactionType.payCharge"), //
     INITIATE_TRANSFER(12, "savingsAccountTransactionType.initiateTransfer"), //
     APPROVE_TRANSFER(13, "savingsAccountTransactionType.approveTransfer"), //
     WITHDRAW_TRANSFER(14, "savingsAccountTransactionType.withdrawTransfer"), //
@@ -39,7 +39,7 @@ public enum SavingsAccountTransactionType {
     }
 
     public String getCode() {
-        return code;
+        return this.code;
     }
 
     public static SavingsAccountTransactionType fromInt(final Integer transactionType) {
@@ -67,7 +67,7 @@ public enum SavingsAccountTransactionType {
                 savingsAccountTransactionType = SavingsAccountTransactionType.WAIVE_CHARGES;
             break;
             case 7:
-                savingsAccountTransactionType = SavingsAccountTransactionType.APPLY_CHARGES;
+                savingsAccountTransactionType = SavingsAccountTransactionType.PAY_CHARGE;
             break;
             case 12:
                 savingsAccountTransactionType = SavingsAccountTransactionType.INITIATE_TRANSFER;
@@ -104,11 +104,11 @@ public enum SavingsAccountTransactionType {
     public boolean isAnnualFee() {
         return this.value.equals(SavingsAccountTransactionType.ANNUAL_FEE.getValue());
     }
-    
+
     public boolean isCharge() {
-        return this.value.equals(SavingsAccountTransactionType.APPLY_CHARGES.getValue());
+        return this.value.equals(SavingsAccountTransactionType.PAY_CHARGE.getValue());
     }
-    
+
     public boolean isWaiveCharge() {
         return this.value.equals(SavingsAccountTransactionType.WAIVE_CHARGES.getValue());
     }

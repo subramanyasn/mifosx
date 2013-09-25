@@ -26,11 +26,12 @@ public class CommandWrapperBuilder {
     private String supportedEntityType;
     private Long supportedEntityId;
     private Long productId;
+    private Long templateId;
 
     public CommandWrapper build() {
         return new CommandWrapper(this.officeId, this.groupId, this.clientId, this.loanId, this.savingsId, this.actionName,
                 this.entityName, this.entityId, this.subentityId, this.codeId, this.supportedEntityType, this.supportedEntityId, this.href,
-                this.json, this.transactionId, this.productId);
+                this.json, this.transactionId, this.productId, this.templateId);
     }
 
     public CommandWrapperBuilder withLoanId(final Long withLoanId) {
@@ -361,6 +362,15 @@ public class CommandWrapperBuilder {
         this.href = "/clientId/" + clientId + "?command=proposeTransfer";
         return this;
     }
+    
+    public CommandWrapperBuilder proposeAndAcceptClientTransfer(final Long clientId) {
+        this.actionName = "PROPOSEANDACCEPTTRANSFER";
+        this.entityName = "CLIENT";
+        this.entityId = clientId;
+        this.clientId = clientId;
+        this.href = "/clientId/" + clientId + "?command=proposeAndAcceptTransfer";
+        return this;
+    }
 
     public CommandWrapperBuilder withdrawClientTransferRequest(final Long clientId) {
         this.actionName = "WITHDRAWTRANSFER";
@@ -490,20 +500,20 @@ public class CommandWrapperBuilder {
         this.href = "/loans/" + loanId + "/charges/" + loanChargeId;
         return this;
     }
-    
+
     public CommandWrapperBuilder payLoanCharge(final Long loanId, final Long loanChargeId) {
         this.actionName = "PAY";
         this.entityName = "LOANCHARGE";
         this.entityId = loanChargeId;
         this.loanId = loanId;
-        if(loanChargeId == null){
+        if (loanChargeId == null) {
             this.href = "/loans/" + loanId;
-        }else{
-            this.href = "/loans/" + loanId + "/charges/" + loanChargeId; 
+        } else {
+            this.href = "/loans/" + loanId + "/charges/" + loanChargeId;
         }
         return this;
     }
-    
+
     public CommandWrapperBuilder deleteLoanCharge(final Long loanId, final Long loanChargeId) {
         this.actionName = "DELETE";
         this.entityName = "LOANCHARGE";
@@ -866,7 +876,6 @@ public class CommandWrapperBuilder {
         return this;
     }
 
-
     public CommandWrapperBuilder createAccountTransfer() {
         this.actionName = "CREATE";
         this.entityName = "ACCOUNTTRANSFER";
@@ -941,7 +950,7 @@ public class CommandWrapperBuilder {
         this.href = "/savingsaccounts/" + accountId + "?command=applyAnnualFees";
         return this;
     }
-    
+
     public CommandWrapperBuilder createSavingsAccountCharge(final Long savingsAccountId) {
         this.actionName = "CREATE";
         this.entityName = "SAVINGSACCOUNTCHARGE";
@@ -978,7 +987,7 @@ public class CommandWrapperBuilder {
         return this;
 
     }
-    
+
     public CommandWrapperBuilder deleteSavingsAccountCharge(final Long savingsAccountId, final Long savingsAccountChargeId) {
         this.actionName = "DELETE";
         this.entityName = "SAVINGSACCOUNTCHARGE";
@@ -1303,6 +1312,33 @@ public class CommandWrapperBuilder {
         this.entityId = clientId;
         this.clientId = clientId;
         this.href = "/clients/" + clientId + "?command=unassignStaff";
+        return this;
+    }
+
+    public CommandWrapperBuilder createTemplate() {
+        this.actionName = "CREATE";
+        this.entityName = "TEMPLATE";
+        this.entityId = null;
+        this.templateId = null;
+        this.href = "/templates";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateTemplate(final Long templateId) {
+        this.actionName = "UPDATE";
+        this.entityName = "TEMPLATE";
+        this.entityId = templateId;
+        this.templateId = templateId;
+        this.href = "/templates/" + templateId;
+        return this;
+    }
+
+    public CommandWrapperBuilder deleteTemplate(final Long templateId) {
+        this.actionName = "DELETE";
+        this.entityName = "TEMPLATE";
+        this.entityId = templateId;
+        this.templateId = templateId;
+        this.href = "/templates/" + templateId;
         return this;
     }
 

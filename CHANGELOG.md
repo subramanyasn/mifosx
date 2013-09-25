@@ -5,6 +5,8 @@ See VERSIONING (https://github.com/openMF/mifosx/blob/master/VERSIONING.md) for 
 
 Releases
 ===============
+1. 22 Sep 2013 - 1.10.2.RELEASE
+1. 20 Sep 2013 - 1.10.1.RELEASE
 1. 19 Sep 2013 - 1.10.0.RELEASE
 1. 18 Sep 2013 - 1.9.2.RELEASE
 1. 10 Sep 2013 - 1.9.1.RELEASE
@@ -36,6 +38,36 @@ Releases
 1. 10 April 2013 - 0.11.2.beta
 1. 05 April 2013 - 0.11.1.beta
 1. 05 April 2013 - 0.11.0.beta
+
+1.10.2.RELEASE
+=============
+Bug Release
+
+Platform & API
+
+New Features & Improvements
+ - [MIFOSX-664] - Client transfer workflow change
+
+Bug
+ - [MIFOSX-677] - No mention of 'transfersInSuspenseAccountId' parameter in API docs
+ - [MIFOSX-684] - Default transfersInSuspense Accounts set incorrectly for existing Saving Products
+ - [MIFOSX-685] - Debit and Balance displayed for active savings account after a transfer in Transactions tab is incorrect
+ - [MIFOSX-686] - Configurable fees payment does not return FeesDeduction as true
+
+
+1.10.1.RELEASE
+=============
+Bug Release
+
+Platform & API
+
+Bug
+ - [MIFOSX-675] - Not able to create savings account with/without charges.
+ - [MIFOSX-680] - Duplicate entries for Payment channels to Fund source mapping
+
+Reference App
+ - [MIFOSX-683] - Update Reference UI to allow manual payments of Loan fees from savings
+
 
 1.10.0.RELEASE
 =============
